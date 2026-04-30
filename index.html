@@ -142,7 +142,6 @@
       border: 1px solid #ccc;
       border-top: none;
       padding: 28px 32px;
-      display: none;
       flex-direction: row;
       align-items: center;
       justify-content: space-between;
@@ -207,6 +206,117 @@
       color: #000;
     }
 
+    /* Brackets panel */
+
+    #brackets {
+      display: none;
+      width: 560px;
+      max-width: 100%;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+
+    #brackets-header {
+      padding: 10px 32px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #brackets-header-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #000;
+    }
+
+    #brackets-header-sub {
+      font-size: 0.65rem;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+
+    .b-row {
+      padding: 11px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.1s;
+    }
+
+    .b-row:last-child { border-bottom: none; }
+
+    .b-row.b-current {
+      background: #fafafa;
+      border-left: 2px solid #000;
+      padding-left: 30px;
+    }
+
+    .b-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .b-name {
+      font-size: 0.78rem;
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      color: #aaa;
+    }
+
+    .b-row.b-current .b-name {
+      font-weight: 700;
+      color: #000;
+    }
+
+    .b-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #fff;
+      background: #000;
+      padding: 2px 7px;
+    }
+
+    .b-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .b-safe-mp {
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #000;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .b-row:not(.b-current) .b-safe-mp {
+      color: #888;
+    }
+
+    .b-dims {
+      font-size: 0.7rem;
+      font-weight: 300;
+      color: #bbb;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      min-width: 140px;
+      text-align: right;
+    }
+
+    .b-row.b-current .b-dims {
+      color: #888;
+    }
+
     footer {
       border-top: 1px solid #eee;
       padding: 16px 40px;
@@ -255,6 +365,13 @@
         <button id="reset-btn" onclick="reset()">Clear</button>
       </div>
     </div>
+
+    <div id="brackets">
+      <div id="brackets-header">
+        <span id="brackets-header-label">Clarity.ai brackets</span>
+        <span id="brackets-header-sub">safe max per bracket at current ratio</span>
+      </div>
+    </div>
   </main>
 
   <footer>Calculated in-browser &mdash; no upload</footer>
@@ -268,6 +385,17 @@
     const result = document.getElementById('result');
     const mpValue = document.getElementById('mp-value');
     const dimensions = document.getElementById('dimensions');
+    const bracketsEl = document.getElementById('brackets');
+
+    const BRACKETS = [
+      { min: 0,   max: 4   },
+      { min: 4,   max: 8   },
+      { min: 8,   max: 16  },
+      { min: 16,  max: 25  },
+      { min: 25,  max: 50  },
+      { min: 50,  max: 100 },
+      { min: 100, max: 200 },
+    ];
 
     dropZone.addEventListener('dragover', e => {
       e.preventDefault();
@@ -303,8 +431,47 @@
         mpValue.textContent = mp >= 10 ? mp.toFixed(1) : mp.toFixed(2);
         dimensions.textContent = `${w} × ${h} px`;
         result.style.display = 'flex';
+
+        renderBrackets(mp, w, h);
       };
       img.src = url;
+    }
+
+    function renderBrackets(mp, imgW, imgH) {
+      const ratio = imgW / imgH;
+      const currentBracket = BRACKETS.find(b => mp >= b.min && mp < b.max) || BRACKETS[BRACKETS.length - 1];
+
+      // Remove old rows (keep the header)
+      const header = document.getElementById('brackets-header');
+      while (bracketsEl.lastChild !== header) {
+        bracketsEl.removeChild(bracketsEl.lastChild);
+      }
+
+      BRACKETS.forEach(b => {
+        const isCurrent = b === currentBracket;
+        const safeMP = b.max - 1;
+        const totalPx = safeMP * 1_000_000;
+        const safeH = Math.round(Math.sqrt(totalPx / ratio));
+        const safeW = Math.round(safeH * ratio);
+
+        const row = document.createElement('div');
+        row.className = 'b-row' + (isCurrent ? ' b-current' : '');
+
+        row.innerHTML = `
+          <div class="b-left">
+            <span class="b-name">${b.min} – ${b.max} MP</span>
+            ${isCurrent ? '<span class="b-badge">Current</span>' : ''}
+          </div>
+          <div class="b-right">
+            <span class="b-safe-mp">safe max ${safeMP} MP</span>
+            <span class="b-dims">${safeW} × ${safeH} px</span>
+          </div>
+        `;
+
+        bracketsEl.appendChild(row);
+      });
+
+      bracketsEl.style.display = 'block';
     }
 
     function reset() {
@@ -313,6 +480,7 @@
       dropLabel.style.display = '';
       dropIcon.style.display = '';
       result.style.display = 'none';
+      bracketsEl.style.display = 'none';
       fileInput.value = '';
     }
   </script>
