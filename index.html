@@ -318,6 +318,20 @@
       color: #888;
     }
 
+    .b-multiplier {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #bbb;
+      white-space: nowrap;
+      min-width: 52px;
+      text-align: right;
+    }
+
+    .b-row.b-current .b-multiplier {
+      color: #000;
+    }
+
     footer {
       border-top: 1px solid #eee;
       padding: 16px 40px;
@@ -370,7 +384,7 @@
     <div id="brackets">
       <div id="brackets-header">
         <span id="brackets-header-label">Clarity.ai brackets</span>
-        <span id="brackets-header-sub">safe max per bracket at current ratio</span>
+        <span id="brackets-header-sub">safe max · multiplier at current ratio</span>
       </div>
     </div>
   </main>
@@ -454,6 +468,8 @@
         const totalPx = safeMP * 1_000_000;
         const safeH = Math.round(Math.sqrt(totalPx / ratio));
         const safeW = Math.round(safeH * ratio);
+        const multiplier = Math.sqrt(safeMP / mp);
+        const multiplierStr = multiplier.toFixed(2) + '×';
 
         const row = document.createElement('div');
         row.className = 'b-row' + (isCurrent ? ' b-current' : '');
@@ -465,6 +481,7 @@
           </div>
           <div class="b-right">
             <span class="b-safe-mp">safe max ${safeMP} MP</span>
+            <span class="b-multiplier">${multiplierStr}</span>
             <span class="b-dims">${safeW} × ${safeH} px</span>
           </div>
         `;
