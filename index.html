@@ -332,6 +332,101 @@
       color: #000;
     }
 
+    .b-price {
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #bbb;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .b-row.b-current .b-price {
+      color: #000;
+      font-weight: 700;
+    }
+
+    /* Clarity Pro panel */
+
+    #brackets-clarity {
+      display: none;
+      width: 560px;
+      max-width: 100%;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+
+    #brackets-clarity-header {
+      padding: 10px 32px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #brackets-clarity-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #000;
+    }
+
+    #brackets-clarity-sub {
+      font-size: 0.65rem;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+
+    .cp-row {
+      padding: 11px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .cp-row:last-child { border-bottom: none; }
+
+    .cp-mult {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #000;
+      min-width: 36px;
+    }
+
+    .cp-dims {
+      font-size: 0.7rem;
+      font-weight: 300;
+      color: #bbb;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      flex: 1;
+      text-align: center;
+    }
+
+    .cp-mp {
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #888;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      min-width: 80px;
+      text-align: right;
+    }
+
+    .cp-price {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #000;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      min-width: 60px;
+      text-align: right;
+    }
+
     footer {
       border-top: 1px solid #eee;
       padding: 16px 40px;
@@ -383,8 +478,15 @@
 
     <div id="brackets">
       <div id="brackets-header">
-        <span id="brackets-header-label">Clarity.ai brackets</span>
+        <span id="brackets-header-label">Crystal Upscaler brackets</span>
         <span id="brackets-header-sub">safe max · multiplier at current ratio</span>
+      </div>
+    </div>
+
+    <div id="brackets-clarity">
+      <div id="brackets-clarity-header">
+        <span id="brackets-clarity-label">Clarity Pro</span>
+        <span id="brackets-clarity-sub">$0.03 per million output pixels</span>
       </div>
     </div>
   </main>
@@ -401,15 +503,16 @@
     const mpValue = document.getElementById('mp-value');
     const dimensions = document.getElementById('dimensions');
     const bracketsEl = document.getElementById('brackets');
+    const clarityEl = document.getElementById('brackets-clarity');
 
     const BRACKETS = [
-      { min: 0,   max: 4   },
-      { min: 4,   max: 8   },
-      { min: 8,   max: 16  },
-      { min: 16,  max: 25  },
-      { min: 25,  max: 50  },
-      { min: 50,  max: 100 },
-      { min: 100, max: 200 },
+      { min: 0,   max: 4,   price: 0.05 },
+      { min: 4,   max: 8,   price: 0.10 },
+      { min: 8,   max: 16,  price: 0.20 },
+      { min: 16,  max: 25,  price: 0.40 },
+      { min: 25,  max: 50,  price: 0.80 },
+      { min: 50,  max: 100, price: 1.60 },
+      { min: 100, max: 200, price: 3.20 },
     ];
 
     dropZone.addEventListener('dragover', e => {
@@ -448,6 +551,7 @@
         result.style.display = 'flex';
 
         renderBrackets(mp, w, h);
+        renderClarityPro(w, h);
       };
       img.src = url;
     }
@@ -481,6 +585,7 @@
           </div>
           <div class="b-right">
             <span class="b-safe-mp">safe max ${safeMP} MP</span>
+            <span class="b-price">$${b.price.toFixed(2)}</span>
             <span class="b-multiplier">${multiplierStr}</span>
             <span class="b-dims">${safeW} × ${safeH} px</span>
           </div>
@@ -492,6 +597,34 @@
       bracketsEl.style.display = 'block';
     }
 
+    function renderClarityPro(w, h) {
+      const header = document.getElementById('brackets-clarity-header');
+      while (clarityEl.lastChild !== header) {
+        clarityEl.removeChild(clarityEl.lastChild);
+      }
+
+      [2, 4, 8, 16].forEach(n => {
+        const outW = w * n;
+        const outH = h * n;
+        const outPx = outW * outH;
+        const outMp = outPx / 1_000_000;
+        const price = outPx / 1_000_000 * 0.03;
+        const mpStr = outMp >= 10 ? outMp.toFixed(1) : outMp.toFixed(2);
+
+        const row = document.createElement('div');
+        row.className = 'cp-row';
+        row.innerHTML = `
+          <span class="cp-mult">${n}×</span>
+          <span class="cp-dims">${outW} × ${outH} px</span>
+          <span class="cp-mp">${mpStr} MP</span>
+          <span class="cp-price">$${price.toFixed(2)}</span>
+        `;
+        clarityEl.appendChild(row);
+      });
+
+      clarityEl.style.display = 'block';
+    }
+
     function reset() {
       preview.style.display = 'none';
       preview.src = '';
@@ -499,6 +632,7 @@
       dropIcon.style.display = '';
       result.style.display = 'none';
       bracketsEl.style.display = 'none';
+      clarityEl.style.display = 'none';
       fileInput.value = '';
     }
   </script>
